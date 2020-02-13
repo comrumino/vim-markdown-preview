@@ -58,20 +58,42 @@ if !exists("g:vim_markdown_preview_hotkey")
     let g:vim_markdown_preview_hotkey='<C-p>'
 endif
 
+function! s:PyPopen(cmd)
+    let l:pinfo = { 'exitcode': 2, 'stdout': '', 'stderr': 'default err:' }
+py3 << EOPY
+import vim, subprocess
+cmd = vim.eval("a:cmd")
+pinfo = vim.eval("l:pinfo")
+proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True)
+exit_code = str(proc.wait()).replace("'", "&apos;")
+stdout = proc.stdout.read().decode().replace("'", "&apos;")
+stderr = proc.stderr.read().decode().replace("'", "&apos;")
+vim.command(f"let pinfo.exitcode = '{exit_code}'")
+vim.command(f"let pinfo.stdout = '{stdout}'")
+vim.command(f"let pinfo.stderr = '{stderr}'")
+EOPY
+    return l:pinfo
+endfunction
+
 function! Vim_Markdown_Preview()
   let b:curr_file = expand('%:p')
-
+  let l:cmd = ''
   if g:vim_markdown_preview_github == 1
-    call system('grip "' . b:curr_file . '" --export /tmp/vim-markdown-preview.html --title vim-markdown-preview.html')
+    let l:cmd = 'grip "' . b:curr_file . '" --export /tmp/vim-markdown-preview.html --title vim-markdown-preview.html'
   elseif g:vim_markdown_preview_perl == 1
-    call system('Markdown.pl "' . b:curr_file . '" > /tmp/vim-markdown-preview.html')
+    let l:cmd = 'Markdown.pl "' . b:curr_file . '" > /tmp/vim-markdown-preview.html'
   elseif g:vim_markdown_preview_pandoc == 1
-    call system('pandoc --standalone "' . b:curr_file . '" > /tmp/vim-markdown-preview.html')
+
+    let l:cmd = 'pandoc --standalone "' . b:curr_file . '" > /tmp/vim-markdown-preview.html'
   else
-    call system('markdown "' . b:curr_file . '" > /tmp/vim-markdown-preview.html')
+    let l:cmd = 'markdown "' . b:curr_file . '" > /tmp/vim-markdown-preview.html'
   endif
-  if v:shell_error
-    echo 'Please install the necessary requirements: https://github.com/JamshedVesuna/vim-markdown-preview#requirements'
+  let l:pinfo = s:PyPopen(l:cmd)
+  if l:pinfo.exitcode != 0
+    echo 'Please install check necessary requirements: https://github.com/JamshedVesuna/vim-markdown-preview#requirements'
+    echo 'EXITCODE: '.l:pinfo.exitcode
+    echo 'STDOUT: '.l:pinfo.stdout
+    echo 'STDERR: '.l:pinfo.stderr
   endif
 
   if g:vmp_osname == 'unix'
