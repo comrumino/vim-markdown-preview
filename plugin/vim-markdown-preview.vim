@@ -91,7 +91,7 @@ function! Vim_Markdown_Preview()
   let l:pinfo = s:PyPopen(l:cmd)
   if l:pinfo.exitcode != 0
     echo 'Please install check necessary requirements: https://github.com/JamshedVesuna/vim-markdown-preview#requirements'
-    echo 'EXITCODE: '.l:pinfo.exitcode
+    echo 'EXITCODE,CMD: '.l:pinfo.exitcode.','.l:cmd
     echo 'STDOUT: '.l:pinfo.stdout
     echo 'STDERR: '.l:pinfo.stderr
   endif
